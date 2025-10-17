@@ -1,0 +1,19 @@
+# VSCode
+.vscode
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Virtual Environment
+*\.venv
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
