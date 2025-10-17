@@ -8,6 +8,8 @@ Data: 17 de outubro de 2025
 
 import os
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, BoundaryNorm
 from typing import Tuple, Dict
 
 
@@ -163,6 +165,124 @@ def compare_images(img1_path: str, img2_path: str) -> Dict:
     }
 
 
+def plot_difference_heatmap(img1_path: str, img2_path: str, output_path: str):
+    """
+    Gera um heatmap mostrando as diferenças entre duas imagens.
+    Usa categorias de cores discretas para melhor visualização.
+
+    Args:
+        img1_path: Caminho para primeira imagem (C)
+        img2_path: Caminho para segunda imagem (Python)
+        output_path: Caminho para salvar o gráfico
+    """
+    # Ler as imagens
+    img1, _, _, _ = read_pgm_p2(img1_path)
+    img2, _, _, _ = read_pgm_p2(img2_path)
+
+    # Calcular diferenças absolutas
+    diff_abs = np.abs(img1.astype(int) - img2.astype(int))
+
+    # Definir categorias de diferença
+    # 0: Idêntico (preto)
+    # 1: Diff = 1 (azul escuro)
+    # 2: Diff = 2-3 (azul claro)
+    # 3: Diff = 4-5 (verde)
+    # 4: Diff = 6-10 (amarelo)
+    # 5: Diff > 10 (vermelho)
+
+    diff_categorized = np.zeros_like(diff_abs, dtype=int)
+    diff_categorized[diff_abs == 0] = 0  # Idêntico
+    diff_categorized[diff_abs == 1] = 1  # Diff = 1
+    diff_categorized[(diff_abs >= 2) & (diff_abs <= 3)] = 2  # Diff 2-3
+    diff_categorized[(diff_abs >= 4) & (diff_abs <= 5)] = 3  # Diff 4-5
+    diff_categorized[(diff_abs >= 6) & (diff_abs <= 10)] = 4  # Diff 6-10
+    diff_categorized[diff_abs > 10] = 5  # Diff > 10
+
+    # Cores personalizadas
+    colors = [
+        '#000000',  # 0: Preto (idêntico)
+        '#1f77b4',  # 1: Azul escuro (diff=1)
+        '#17becf',  # 2: Azul ciano (diff 2-3)
+        '#2ca02c',  # 3: Verde (diff 4-5)
+        '#ff7f0e',  # 4: Laranja (diff 6-10)
+        '#d62728'   # 5: Vermelho (diff >10)
+    ]
+    cmap = ListedColormap(colors)
+    bounds = [0, 1, 2, 3, 4, 5, 6]
+    norm = BoundaryNorm(bounds, cmap.N)
+
+    # Criar figura com 3 subplots
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+
+    # Subplot 1: Imagem C
+    axes[0].imshow(img1, cmap='gray', vmin=0, vmax=255)
+    axes[0].set_title('Implementação C', fontsize=12, fontweight='bold')
+    axes[0].axis('off')
+
+    # Subplot 2: Imagem Python
+    axes[1].imshow(img2, cmap='gray', vmin=0, vmax=255)
+    axes[1].set_title('Implementação Python', fontsize=12, fontweight='bold')
+    axes[1].axis('off')
+
+    # Subplot 3: Heatmap de diferenças categorizadas
+    im = axes[2].imshow(diff_categorized, cmap=cmap, norm=norm)
+    axes[2].set_title('Mapa de Diferenças (Categorizado)',
+                      fontsize=12, fontweight='bold')
+
+    # Adicionar eixos com medições de pixels
+    height, width = diff_categorized.shape
+
+    # Configurar eixo X (horizontal - largura)
+    x_ticks = np.arange(0, width, 10)
+    axes[2].set_xticks(x_ticks)
+    axes[2].set_xticklabels(x_ticks, fontsize=8)
+    axes[2].set_xlabel('Pixels (Largura)', fontsize=10)
+
+    # Configurar eixo Y (vertical - altura)
+    y_ticks = np.arange(0, height, 10)
+    axes[2].set_yticks(y_ticks)
+    axes[2].set_yticklabels(y_ticks, fontsize=8)
+    axes[2].set_ylabel('Pixels (Altura)', fontsize=10)
+
+    # Manter grid leve para facilitar leitura
+    axes[2].grid(False)
+
+    # Adicionar colorbar customizada
+    cbar = plt.colorbar(im, ax=axes[2], fraction=0.046, pad=0.04,
+                        ticks=[0.5, 1.5, 2.5, 3.5, 4.5, 5.5])
+    cbar.set_ticklabels(['0\n(Idêntico)', '1', '2-3', '4-5', '6-10', '>10'])
+    cbar.set_label('Diferença (pixels)', rotation=270,
+                   labelpad=20, fontsize=10)
+
+    # Calcular estatísticas por categoria
+    num_identical = np.count_nonzero(diff_abs == 0)
+    num_diff_1 = np.count_nonzero(diff_abs == 1)
+    num_diff_2_3 = np.count_nonzero((diff_abs >= 2) & (diff_abs <= 3))
+    num_diff_4_5 = np.count_nonzero((diff_abs >= 4) & (diff_abs <= 5))
+    num_diff_6_10 = np.count_nonzero((diff_abs >= 6) & (diff_abs <= 10))
+    num_diff_10_plus = np.count_nonzero(diff_abs > 10)
+
+    total = diff_abs.size
+    max_diff = np.max(diff_abs)
+    mean_diff = np.mean(diff_abs)
+
+    # Título com estatísticas
+    fig.suptitle(
+        f'Comparação: {os.path.basename(img1_path)}\n'
+        f'Total: {total} pixels | Média: {mean_diff:.4f} | Máximo: {max_diff}\n'
+        f'Idênticos: {num_identical} | Diff=1: {num_diff_1} | '
+        f'Diff 2-3: {num_diff_2_3} | Diff 4-5: {num_diff_4_5} | '
+        f'Diff 6-10: {num_diff_6_10} | Diff>10: {num_diff_10_plus}',
+        fontsize=10
+    )
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    plt.close()
+
+    print(f"   Heatmap salvo em: {output_path}")
+
+
 def print_comparison_result(filename: str, result: Dict):
     """Imprime os resultados da comparação de forma formatada."""
     print(f"\n{'='*70}")
@@ -229,9 +349,9 @@ def print_comparison_result(filename: str, result: Dict):
 
 def main():
     """Função principal que executa os testes de comparação."""
-    # Definir caminhos
-    c_filtered_dir = "../imgs_filtered"
-    python_filtered_dir = "../python_implementation/imgs_filtered"
+    # Definir caminhos (agora test está dentro de python_implementation)
+    c_filtered_dir = "../../imgs_filtered"
+    python_filtered_dir = "../imgs_filtered"
 
     # Verificar se os diretórios existem
     if not os.path.exists(c_filtered_dir):
@@ -255,6 +375,12 @@ def main():
     print(f"COMPARAÇÃO DE IMAGENS: Implementação C vs Python")
     print(f"{'='*70}")
 
+    # Criar diretório para armazenar os heatmaps
+    test_imgs_dir = "imgs_tests"
+    if not os.path.exists(test_imgs_dir):
+        os.makedirs(test_imgs_dir)
+        print(f"\nDiretório criado: {test_imgs_dir}/")
+
     # Comparar cada arquivo
     for filename in sorted(c_files):
         c_path = os.path.join(c_filtered_dir, filename)
@@ -267,6 +393,12 @@ def main():
         try:
             result = compare_images(c_path, python_path)
             print_comparison_result(filename, result)
+
+            # Gerar heatmap de diferenças
+            if not result['identical']:
+                heatmap_filename = f"diff_heatmap_{filename.replace('.pgm', '.png')}"
+                heatmap_path = os.path.join(test_imgs_dir, heatmap_filename)
+                plot_difference_heatmap(c_path, python_path, heatmap_path)
         except Exception as e:
             print(f"\n[X] Erro ao comparar {filename}: {e}")
 
