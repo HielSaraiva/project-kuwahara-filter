@@ -207,16 +207,16 @@ python compare_images.py
 
 ```
 Dimensões: 90x90 pixels (8100 pixels totais)
-Pixels diferentes: 4245 (52.41%)
-Pixels idênticos: 3855 (47.59%)
+Pixels diferentes: 616 (7.60%)
+Pixels idênticos: 7484 (92.40%)
 
 Correlação normalizada: 0.9996 (99.96% de similaridade estrutural)
-EMA (Erro Médio Absoluto): 0.63 pixels
-Pixels com diferença ≤ 1: 96.44% (7812/8100 pixels)
-Pixels com diferença ≤ 5: 99.35% (8047/8100 pixels)
+EMA (Erro Médio Absoluto): 0.18 pixels
+Pixels com diferença ≤ 1: 96.72% (7834/8100 pixels)
+Pixels com diferença ≤ 5: 99.31% (8044/8100 pixels)
 
-Diferença máxima: 26 pixels (em 1 único pixel na posição linha 21, coluna 0)
-Média dos pixels C: 47.35 | Python: 46.91 (diferença: +0.44)
+Diferença máxima: 25 pixels (em 1 único pixel na posição linha 21, coluna 0)
+Média dos pixels C: 46.86 | Python: 46.91 (diferença: -0.06)
 ```
 
 ### Análise Visual - Heatmap de Diferenças
@@ -233,7 +233,7 @@ Média dos pixels C: 47.35 | Python: 46.91 (diferença: +0.44)
 
 ### Conclusões da Validação
 
-#### **Implementação C está CORRETA**
+#### ✅ **Implementação C está CORRETA**
 
 As diferenças observadas **NÃO indicam erro** na implementação em C.
 
@@ -241,21 +241,22 @@ As diferenças observadas **NÃO indicam erro** na implementação em C.
    - Correlação próxima de 1.0 indica que as imagens são **estruturalmente idênticas**
    - As bordas, formas e padrões são preservados igualmente em ambas implementações
 
-2. **96.44% dos Pixels com Diferença ≤ 1**
+2. **96.72% dos Pixels com Diferença ≤ 1**
    - Diferenças de 1 pixel são **imperceptíveis ao olho humano**
-   - Causadas por **arredondamentos diferentes** em cálculos de ponto flutuante
-   - Normal em implementações independentes do mesmo algoritmo
+   - Causadas por **diferenças algorítmicas** entre implementações
+   - Normal em implementações independentes do mesmo filtro
 
 3. **Diferenças são Mínimas e Consistentes**
-   - EMA de 0.63 pixels = **0.25% da escala** (0-255)
-   - Viés de +0.44 pixels mostra que C é ligeiramente mais clara (diferença desprezível)
+   - EMA de 0.18 pixels = **0.07% da escala** (0-255)
+   - Viés de -0.06 pixels é praticamente **zero** (diferença desprezível)
    - Não há erros sistemáticos ou padrões incorretos
 
 4. **Por que as Diferenças Existem?**
-   - **Variantes do Algoritmo**: C implementa Kuwahara clássico (4 quadrantes), Python (pykuwahara) pode usar variante otimizada
-   - **Precisão Numérica**: Diferenças em arredondamento (C usa `sqrt()`, Python usa NumPy)
-   - **Ordem de Operações**: Pequenas variações na ordem de cálculos geram diferenças mínimas
-   - **Implementações Independentes**: Código escrito do zero vs biblioteca otimizada
+   - **Variância Amostral vs Populacional**: C usa divisão por (n-1), pykuwahara usa divisão por n
+   - **Método de Filtragem**: C usa soma direta, pykuwahara usa convolução separável (cv2.sepFilter2D)
+   - **Tratamento de Bordas**: C usa clamping, pykuwahara usa método padrão do OpenCV
+   - **Arredondamento Final**: C trunca `(int)mean`, pykuwahara arredonda com NumPy
+   - **Precisão Numérica**: C usa `double` (64 bits), pykuwahara usa `float32` (32 bits)
 
 5. **Validação por Inspeção Visual**
    - As imagens são **visualmente indistinguíveis**
@@ -264,13 +265,13 @@ As diferenças observadas **NÃO indicam erro** na implementação em C.
 
 #### 🎯 **Conclusão Final**
 
-A implementação em C do filtro Kuwahara está **correta e validada**. As pequenas diferenças observadas (média de 0.63 pixels) são:
-- **Esperadas** entre implementações independentes
-- **Aceitáveis** para processamento de imagens
-- **Imperceptíveis** visualmente
-- **Não indicam erro** algorítmico
+A implementação em C do filtro Kuwahara está **correta e validada**. As diferenças observadas (7.60% dos pixels, média de 0.18 pixels) são:
+- ✅ **Esperadas** devido a variantes algorítmicas (Kuwahara clássico vs otimizado com OpenCV)
+- ✅ **Aceitáveis** para processamento de imagens (92.40% pixels idênticos)
+- ✅ **Imperceptíveis** visualmente (96.72% com diferença ≤ 1 pixel)
+- ✅ **Não indicam erro** algorítmico (correlação 99.96%)
 
-A correlação de 99.96% e similaridade de 96.44% (≤1 pixel) confirmam que o algoritmo foi implementado corretamente em C.
+A correlação de 99.96% e similaridade de 96.72% (≤1 pixel) confirmam que o algoritmo foi implementado corretamente em C seguindo a abordagem clássica do filtro Kuwahara.
 
 ### Imagens Processadas
 
