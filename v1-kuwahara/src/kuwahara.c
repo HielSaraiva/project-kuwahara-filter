@@ -7,7 +7,7 @@ void kuwahara_filter(int image[IMG_SIZE][IMG_SIZE], int window)
     int width = IMG_SIZE, height = IMG_SIZE;
     int window_size = window;
     int quadrant_size = (window_size + 1) / 2;
-    int result[IMG_SIZE][IMG_SIZE]; // ESTRUTURA DE DADOS temporária para o resultado (8100 valores inteiros)
+    int result[IMG_SIZE][IMG_SIZE]; // ESTRUTURA DE DADOS auxiliar para armazenar o resultado (8100 valores inteiros)
 
     // Percorre cada pixel da imagem
     for (int pixel_y = 0; pixel_y < height; ++pixel_y)
@@ -20,7 +20,7 @@ void kuwahara_filter(int image[IMG_SIZE][IMG_SIZE], int window)
 
             // Inicializa busca pelo quadrante com menor desvio padrão
             double best_std_dev = 1e300; // valor inicial muito grande
-            int best_mean = image[pixel_y][pixel_x];
+            double best_mean = image[pixel_y][pixel_x];
 
             // Analisa os 4 quadrantes sobrepostos
             for (int quadrant_y = 0; quadrant_y <= 1; ++quadrant_y)
@@ -62,21 +62,23 @@ void kuwahara_filter(int image[IMG_SIZE][IMG_SIZE], int window)
                     if (pixel_count > 1)
                     {
                         double mean = (double)sum / (double)pixel_count;
-                        // Desvio padrão amostral
-                        double variance = ((double)sum_sq / (double)pixel_count - mean * mean) * ((double)pixel_count / (double)(pixel_count - 1));
+                        
+                        // Desvio padrão
+                        double variance = ((double)sum_sq - (double)sum * sum / pixel_count) / (pixel_count - 1);
+                        
                         double std_dev = sqrt(variance);
 
                         // Atualiza se encontrou quadrante mais homogêneo (menor desvio padrão)
                         if (std_dev < best_std_dev)
                         {
                             best_std_dev = std_dev;
-                            best_mean = (int)(mean + 0.5);
+                            best_mean = mean; // Armazena sem arredondar
                         }
                     }
                 }
             }
             // Atribui média do melhor quadrante ao pixel de saída
-            result[pixel_y][pixel_x] = best_mean;
+            result[pixel_y][pixel_x] = (int)(best_mean);
         }
     }
 
