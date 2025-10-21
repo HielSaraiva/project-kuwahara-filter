@@ -68,9 +68,9 @@ def main():
         # "../imgs_original/body3.ascii.pgm",
         # "../imgs_original/Brain1.pgm",
         # "../imgs_original/coins.ascii.pgm",
-        "../imgs_original/mona_lisa.ascii.pgm",
+        # "../imgs_original/mona_lisa.ascii.pgm",
         # "../imgs_original/PengBrew.pgm",
-        # "../imgs_original/pepper.ascii.pgm",
+        "../imgs_original/pepper.ascii.pgm",
         # "../imgs_original/saturn.ascii.pgm",
     ]
 

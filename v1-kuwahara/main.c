@@ -11,9 +11,9 @@ int main(void)
     // const char *inpath = "imgs_original/body3.ascii.pgm";
     // const char *inpath = "imgs_original/Brain1.pgm";
     // const char *inpath = "imgs_original/coins.ascii.pgm";
-    const char *inpath = "imgs_original/mona_lisa.ascii.pgm";
+    // const char *inpath = "imgs_original/mona_lisa.ascii.pgm";
     // const char *inpath = "imgs_original/PengBrew.pgm";
-    // const char *inpath = "imgs_original/pepper.ascii.pgm";
+    const char *inpath = "imgs_original/pepper.ascii.pgm";
     // const char *inpath = "imgs_original/saturn.ascii.pgm";
 
     // Define o tamanho da janela (ímpar)
