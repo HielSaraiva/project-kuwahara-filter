@@ -40,7 +40,18 @@ void kuwahara_filter(int image[IMG_SIZE][IMG_SIZE], int window)
                             int read_y = window_top_y + (quadrant_y ? (quadrant_size - 1) : 0) + offset_y;
                             int read_x = window_left_x + (quadrant_x ? (quadrant_size - 1) : 0) + offset_x;
 
-                            // Aplica clamping para manter coordenadas dentro dos limites da imagem
+                            // Aplica BORDER_REFLECT_101 (reflexão espelhada, como no OpenCV)
+                            // Reflete para dentro da imagem sem incluir o pixel da borda
+                            if (read_y < 0)
+                                read_y = -read_y;
+                            if (read_y >= height)
+                                read_y = 2 * height - read_y - 2;
+                            if (read_x < 0)
+                                read_x = -read_x;
+                            if (read_x >= width)
+                                read_x = 2 * width - read_x - 2;
+                            
+                            // Clamping como fallback para casos extremos
                             if (read_y < 0)
                                 read_y = 0;
                             if (read_y >= height)
