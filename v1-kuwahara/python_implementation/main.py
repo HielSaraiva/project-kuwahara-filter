@@ -64,14 +64,8 @@ def write_pgm_p2(filepath, image):
 def main():
     # Lista de imagens para processar
     images = [
-        # "../imgs_original/balloons.ascii.pgm",
-        # "../imgs_original/body3.ascii.pgm",
-        # "../imgs_original/Brain1.pgm",
-        # "../imgs_original/coins.ascii.pgm",
-        # "../imgs_original/mona_lisa.ascii.pgm",
-        # "../imgs_original/PengBrew.pgm",
-        "../imgs_original/pepper.ascii.pgm",
-        # "../imgs_original/saturn.ascii.pgm",
+        "../imgs_original/mona_lisa.ascii.pgm",
+        # "../imgs_original/pepper.ascii.pgm",
     ]
 
     # Tamanho da janela (radius no pykuwahara)

@@ -23,68 +23,72 @@ void kuwahara_filter(int image[IMG_SIZE][IMG_SIZE], int window)
             double best_mean = image[pixel_y][pixel_x];
 
             // Analisa os 4 quadrantes sobrepostos
-            for (int quadrant_y = 0; quadrant_y <= 1; ++quadrant_y)
+            // Pykuwahara usa "anchors" na ordem: (0,0), (0,1), (1,0), (1,1)
+            // Que correspondem aos quadrantes: (1,1), (0,1), (1,0), (0,0)
+            int quadrant_order[4][2] = {{1,1}, {0,1}, {1,0}, {0,0}};
+            
+            for (int q = 0; q < 4; ++q)
             {
-                for (int quadrant_x = 0; quadrant_x <= 1; ++quadrant_x)
+                int quadrant_y = quadrant_order[q][0];
+                int quadrant_x = quadrant_order[q][1];
+                
+                // Acumula soma e soma dos quadrados para calcular estatísticas
+                long long sum = 0, sum_sq = 0;
+                int pixel_count = 0;
+
+                // Percorre pixels dentro do quadrante atual
+                for (int offset_y = 0; offset_y < quadrant_size; ++offset_y)
                 {
-                    // Acumula soma e soma dos quadrados para calcular estatísticas
-                    long long sum = 0, sum_sq = 0;
-                    int pixel_count = 0;
-
-                    // Percorre pixels dentro do quadrante atual
-                    for (int offset_y = 0; offset_y < quadrant_size; ++offset_y)
+                    for (int offset_x = 0; offset_x < quadrant_size; ++offset_x)
                     {
-                        for (int offset_x = 0; offset_x < quadrant_size; ++offset_x)
-                        {
-                            // Aalcula posição real do pixel (com sobreposição dos quadrantes)
-                            int read_y = window_top_y + (quadrant_y ? (quadrant_size - 1) : 0) + offset_y;
-                            int read_x = window_left_x + (quadrant_x ? (quadrant_size - 1) : 0) + offset_x;
+                        // Calcula posição real do pixel (com sobreposição dos quadrantes)
+                        int read_y = window_top_y + (quadrant_y ? (quadrant_size - 1) : 0) + offset_y;
+                        int read_x = window_left_x + (quadrant_x ? (quadrant_size - 1) : 0) + offset_x;
 
-                            // Aplica BORDER_REFLECT_101 (reflexão espelhada, como no OpenCV)
-                            // Reflete para dentro da imagem sem incluir o pixel da borda
-                            if (read_y < 0)
-                                read_y = -read_y;
-                            if (read_y >= height)
-                                read_y = 2 * height - read_y - 2;
-                            if (read_x < 0)
-                                read_x = -read_x;
-                            if (read_x >= width)
-                                read_x = 2 * width - read_x - 2;
-                            
-                            // Clamping como fallback para casos extremos
-                            if (read_y < 0)
-                                read_y = 0;
-                            if (read_y >= height)
-                                read_y = height - 1;
-                            if (read_x < 0)
-                                read_x = 0;
-                            if (read_x >= width)
-                                read_x = width - 1;
+                        // Aplica BORDER_REFLECT_101 (reflexão espelhada, como no OpenCV)
+                        // Reflete para dentro da imagem sem incluir o pixel da borda
+                        if (read_y < 0)
+                            read_y = -read_y;
+                        if (read_y >= height)
+                            read_y = 2 * height - read_y - 2;
+                        if (read_x < 0)
+                            read_x = -read_x;
+                        if (read_x >= width)
+                            read_x = 2 * width - read_x - 2;
+                        
+                        // Clamping como fallback para casos extremos
+                        if (read_y < 0)
+                            read_y = 0;
+                        if (read_y >= height)
+                            read_y = height - 1;
+                        if (read_x < 0)
+                            read_x = 0;
+                        if (read_x >= width)
+                            read_x = width - 1;
 
-                            // Acumula valores para cálculo de média e desvio padrão
-                            int pixel_value = image[read_y][read_x];
-                            sum += pixel_value;
-                            sum_sq += (long long)pixel_value * (long long)pixel_value;
-                            pixel_count++;
-                        }
+                        // Acumula valores para cálculo de média e desvio padrão
+                        int pixel_value = image[read_y][read_x];
+                        sum += pixel_value;
+                        sum_sq += (long long)pixel_value * (long long)pixel_value;
+                        pixel_count++;
                     }
+                }
 
-                    // Calcula estatísticas do quadrante atual
-                    if (pixel_count > 1)
+                // Calcula estatísticas do quadrante atual
+                if (pixel_count > 1)
+                {
+                    double mean = (double)sum / (double)pixel_count;
+                    
+                    // Calcula Variância Populacional
+                    double variance = ((double)sum_sq - (double)sum * sum / pixel_count) / pixel_count;
+                    
+                    double std_dev = sqrt(variance);
+
+                    // Atualiza se encontrou quadrante mais homogêneo (menor desvio padrão)
+                    if (std_dev < best_std_dev)
                     {
-                        double mean = (double)sum / (double)pixel_count;
-                        
-                        // Desvio padrão
-                        double variance = ((double)sum_sq - (double)sum * sum / pixel_count) / (pixel_count - 1);
-                        
-                        double std_dev = sqrt(variance);
-
-                        // Atualiza se encontrou quadrante mais homogêneo (menor desvio padrão)
-                        if (std_dev < best_std_dev)
-                        {
-                            best_std_dev = std_dev;
-                            best_mean = mean; // Armazena sem arredondar
-                        }
+                        best_std_dev = std_dev;
+                        best_mean = mean; // Armazena sem arredondar
                     }
                 }
             }

@@ -6,11 +6,14 @@ Autor: Hiel Saraiva
 Data: 17 de outubro de 2025
 """
 
+from typing import Tuple, Dict
+from matplotlib.colors import ListedColormap, BoundaryNorm
+import matplotlib.pyplot as plt
 import os
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap, BoundaryNorm
-from typing import Tuple, Dict
+import matplotlib
+# Usar backend sem interface gráfica para evitar erro de Tkinter
+matplotlib.use('Agg')
 
 
 def read_pgm_p2(filepath: str) -> Tuple[np.ndarray, int, int, int]:
@@ -394,11 +397,10 @@ def main():
             result = compare_images(c_path, python_path)
             print_comparison_result(filename, result)
 
-            # Gerar heatmap de diferenças
-            if not result['identical']:
-                heatmap_filename = f"diff_heatmap_{filename.replace('.pgm', '.png')}"
-                heatmap_path = os.path.join(test_imgs_dir, heatmap_filename)
-                plot_difference_heatmap(c_path, python_path, heatmap_path)
+            # Gerar heatmap sempre (mesmo para imagens idênticas)
+            heatmap_filename = f"diff_heatmap_{filename.replace('.pgm', '.png')}"
+            heatmap_path = os.path.join(test_imgs_dir, heatmap_filename)
+            plot_difference_heatmap(c_path, python_path, heatmap_path)
         except Exception as e:
             print(f"\n[X] Erro ao comparar {filename}: {e}")
 
