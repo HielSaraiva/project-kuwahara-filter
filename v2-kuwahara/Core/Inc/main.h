@@ -36,7 +36,7 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+typedef uint8_t pixel_t;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
