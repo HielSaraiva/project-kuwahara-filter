@@ -46,8 +46,21 @@ project-kuwahara-filter/
 ├── README.md                           # Este arquivo
 ├── LICENSE                             # Licença MIT
 │
-└── v1-kuwahara/                        # Versão 1 - Implementação em PC
+├── v1-kuwahara/                        # Versão 1 - Implementação em PC
+│
+└── v2-kuwahara/                        # Versão 2 - Sistema Embarcado
 ```
+
+## Hardware Utilizado
+
+A placa selecionada para este projeto foi a **NUCLEO-F030R8** da fabricante STMicroelectronics.
+
+### 📋 Especificações Principais:
+- **Processador**: ARM Cortex-M0
+- **Frequência**: 48 MHz
+- **Memória Flash**: 64 KB
+- **SRAM**: 8 KB
+- **Arquitetura**: 32-bit RISC
 
 ## Formato de Imagens
 
@@ -66,12 +79,7 @@ O projeto utiliza imagens no formato **PGM (Portable Gray Map)**:
    - Escolhe o quadrante com menor desvio padrão
    - Atribui a média desse quadrante ao pixel de saída
 
-2. **Tratamento de bordas**: Aplica clamping (limita coordenadas aos limites da imagem)
-
-### Diferenças entre as Implementações
-
-- **C**: Implementação manual completa do algoritmo
-- **Python**: Utiliza a biblioteca `pykuwahara` (implementação otimizada)
+2. **Tratamento de bordas**: Aplica BORDER_REFLECT_101 (reflexão espelhada, compatível com OpenCV)
 
 ## Licença
 
