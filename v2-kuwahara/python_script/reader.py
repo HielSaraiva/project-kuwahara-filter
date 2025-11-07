@@ -26,19 +26,28 @@ try:
             print(f"\nIniciando captura da imagem {imagem_num}...")
         elif capturando:
             pgm_lines.append(line)
-            # Critério: 4 linhas de cabeçalho + 90 linhas de pixels
-            if len(pgm_lines) == 3 + 90:
-                # Verifica se tem 8100 valores
-                pixel_count = sum(len(l.split()) for l in pgm_lines[4:])
-                if pixel_count == 8100:
+            # Critério: 3 linhas de cabeçalho (P2, dimensões, maxval) + 90 linhas de pixels
+            if len(pgm_lines) >= 3 + 90:
+                # Verifica se tem 8100 valores nas linhas de pixels (linhas 3 a 92, índices 3 em diante)
+                pixel_count = sum(len(l.split()) for l in pgm_lines[3:])
+
+                print(
+                    f"   Linhas capturadas: {len(pgm_lines)}, Pixels: {pixel_count}")
+
+                if pixel_count >= 8100:
+                    # Salva apenas as 93 primeiras linhas (3 cabeçalho + 90 pixels)
                     with open(f"saida_{imagem_num}.pgm", "w") as f:
-                        f.writelines(pgm_lines)
-                    print(f"Imagem {imagem_num} salva!")
-                else:
+                        f.writelines(pgm_lines[:93])
                     print(
-                        f"Imagem {imagem_num} ignorada: quantidade de pixels ({pixel_count}) incorreta!")
-                imagem_num += 1
-                capturando = False
+                        f"Imagem {imagem_num} salva em 'saida_{imagem_num}.pgm'!")
+                    imagem_num += 1
+                    capturando = False
+                elif len(pgm_lines) > 100:
+                    # Se passou de 100 linhas e ainda não tem 8100 pixels, algo está errado
+                    print(
+                        f"Imagem {imagem_num} descartada: pixels incorretos ({pixel_count}/8100)")
+                    imagem_num += 1
+                    capturando = False
 except KeyboardInterrupt:
     print("\nLeitura interrompida pelo usuário.")
 
