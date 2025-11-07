@@ -10,7 +10,7 @@ for i, port in enumerate(ports):
 idx = int(input("Digite o número da porta serial: "))
 port_name = ports[idx].device
 
-ser = serial.Serial(port_name, baudrate=38400, timeout=2)
+ser = serial.Serial(port_name, baudrate=38400, timeout=None)
 
 print("Aguardando início da imagem (P2)...")
 pgm_lines = []
