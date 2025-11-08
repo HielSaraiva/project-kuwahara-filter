@@ -55,8 +55,7 @@ source venv/bin/activate
 
 # Instale as dependências:
 pip install -r requirements.txt
-# ou
-pip install pyserial
+# Isso instalará: pyserial, numpy, matplotlib
 ```
 
 ### 2. Gravar o Firmware no STM32 (UMA VEZ)
@@ -99,9 +98,24 @@ Tempo total: ~35 segundos
 
 ### 5. Resultado
 
-O arquivo filtrado será salvo no mesmo diretório da imagem original:
+O arquivo filtrado será salvo na pasta `Core/pgms/`:
 ```
-v1-kuwahara/imgs_original/filtered_20251107_143022.pgm
+v2-kuwahara/Core/pgms/filtered_20251108_143022.pgm
+```
+
+### 6. Comparar Resultados (Opcional)
+
+Para comparar pixel a pixel a imagem filtrada com outra referência:
+
+```bash
+# Comparar saída do v2 com v1
+python compare_filtered.py ../Core/pgms/filtered_20251108_143022.pgm \
+                            ../../v1-kuwahara/imgs_filtered/mona_lisa.ascii.pgm
+
+# O script irá:
+# 1. Calcular métricas de diferença (MAE, RMSE, correlação)
+# 2. Gerar heatmap visual mostrando diferenças pixel a pixel
+# 3. Salvar em: python_script/heatmaps/heatmap_*.png
 ```
 
 ## Formato do Protocolo UART
@@ -188,8 +202,9 @@ timeout_time = time.time() + 20  # Aumentar se necessário
 ## Arquivos Principais
 
 - **`main.c`**: Firmware STM32 com filtro Kuwahara
-- **`writer_reader.py`**: Script Python para envio/recepção
-- **`requirements.txt`**: Dependências Python (pyserial)
+- **`writer_reader.py`**: Script Python para envio/recepção de imagens
+- **`compare_filtered.py`**: Script Python para comparação pixel a pixel com heatmap
+- **`requirements.txt`**: Dependências Python (pyserial, numpy, matplotlib)
 - **`README.md`**: Este arquivo
 
 ## Requisitos
@@ -198,7 +213,9 @@ timeout_time = time.time() + 20  # Aumentar se necessário
 - **Software:**
   - STM32CubeIDE (para compilar/flash)
   - Python 3.x
-  - pyserial
+  - pyserial (comunicação UART)
+  - numpy (processamento de arrays - opcional, para comparação)
+  - matplotlib (geração de heatmaps - opcional, para comparação)
 - **Imagens:** Arquivos PGM P2 ASCII 90×90
 
 ## Autor
