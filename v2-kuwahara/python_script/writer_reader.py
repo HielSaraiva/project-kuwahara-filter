@@ -371,7 +371,12 @@ def main():
         # Gera nome do arquivo com timestamp
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         output_filename = f"filtered_{timestamp}.pgm"
-        output_path = os.path.join(os.path.dirname(pgm_file), output_filename)
+
+        # Salva na pasta Core/pgms (relativo ao script)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        output_dir = os.path.join(script_dir, '..', 'Core', 'pgms')
+        os.makedirs(output_dir, exist_ok=True)  # Cria pasta se não existir
+        output_path = os.path.join(output_dir, output_filename)
 
         # Salva arquivo
         if save_pgm_file(filtered_image, output_path):
