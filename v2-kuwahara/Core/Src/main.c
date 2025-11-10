@@ -362,6 +362,13 @@ int main(void) {
 #ifdef STREAMING_MODE
 		// ===== MODO STREAMING: Duas fases com buffer 46x90 =====
 
+		// Limpa o buffer antes de processar nova imagem
+		for (int i = 0; i < BUFFER_SIZE; i++) {
+			for (int j = 0; j < IMG_SIZE; j++) {
+				image_buffer[i][j] = 0;
+			}
+		}
+
 		// FASE 1: Recebe linhas 0-45 (primeiras 46 linhas)
 		for (int i = 0; i < BUFFER_SIZE; i++) {
 			if (!receive_line_uart(image_buffer[i])) {
