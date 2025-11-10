@@ -375,7 +375,8 @@ int main(void) {
 		printf("%d %d\n", IMG_SIZE, IMG_SIZE);
 		printf("%d\n", MAX_PIXEL_VALUE);
 
-		// Processa e envia linhas 0-44 (pausa no final da linha 44)
+		// FASE 1: Processa e envia linhas 0-44 (45 linhas)
+		// Buffer tem linhas 0-45, então linha 44 tem contexto completo (linha 45 disponível)
 		process_and_send_lines(0, 44, 0);
 
 		// FASE 2: Recebe linhas 44-89 (últimas 46 linhas, sobrescreve buffer)
@@ -387,19 +388,21 @@ int main(void) {
 			}
 		}
 
-		// Volta para linha 45, coluna 0
-		// Processa e envia linhas 45-89
-		// buffer[0] = linha 44 global
-		// buffer[1] = linha 45 global ← começa aqui
+		// FASE 2: Processa e envia linhas 45-89 (45 linhas)
+		// buffer[0] = linha 44 global (contexto para linha 45)
+		// buffer[1] = linha 45 global ← começa processamento aqui
 		// buffer[45] = linha 89 global
 		process_and_send_lines(45, 89, 1);
 
 #else
 		// ===== MODO FLASH: Processamento tradicional =====
 		kuwahara_filter(IMAGE_DATA_FLASH, KUWAHARA_WINDOW);
+		
+		HAL_Delay(5000);  // Delay apenas no modo FLASH
 #endif
 
-		HAL_Delay(5000);
+		// NÃO use HAL_Delay aqui no modo STREAMING!
+		// O loop ficará aguardando próxima imagem via UART
 	};
 	/* USER CODE END 3 */
 }
