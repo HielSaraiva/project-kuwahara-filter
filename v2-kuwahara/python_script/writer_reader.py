@@ -17,6 +17,9 @@ import time
 import sys
 import os
 
+HANDSHAKE_READY = "#READY2#"
+HANDSHAKE_GO = "#GO2#"
+
 
 def list_serial_ports():
     """Lista todas as portas seriais disponíveis."""
@@ -111,82 +114,66 @@ def read_pgm_file(filepath):
 
 
 def send_lines(ser, image_data, start_line, end_line):
-    """
-    Envia linhas da imagem via serial.
-
-    Args:
-        ser: Objeto serial
-        image_data: Lista de listas com pixels
-        start_line: Linha inicial (inclusive)
-        end_line: Linha final (inclusive)
-    """
+    """Envia bloco de linhas sequencialmente (menos flush por eficiência)."""
     num_lines = end_line - start_line + 1
     print(f"\nEnviando linhas {start_line}-{end_line} ({num_lines} linhas)...")
-
+    buf = []
     for i in range(start_line, end_line + 1):
         line = image_data[i]
-        line_str = ' '.join(str(p) for p in line) + '\n'
-        ser.write(line_str.encode('ascii'))
-
-        # Feedback visual a cada 10 linhas
+        buf.append(' '.join(str(p) for p in line) + '\n')
         if (i - start_line + 1) % 10 == 0 or i == end_line:
             print(
                 f"  Enviadas {i - start_line + 1}/{num_lines} linhas", end='\r')
-
-    print()  # Nova linha após o progresso
+    ser.write(''.join(buf).encode('ascii'))
     ser.flush()
+    print()  # Nova linha
     print("✓ Envio concluído")
 
 
 def capture_filtered_lines(ser, expected_lines, phase_name):
-    """
-    Captura linhas filtradas que o STM32 está enviando via UART.
-
-    Args:
-        ser: Objeto serial
-        expected_lines: Número de linhas esperadas
-        phase_name: Nome da fase (para mensagens)
-
-    Returns:
-        list: Lista de strings com as linhas capturadas, ou None se erro
-    """
+    """Captura linhas filtradas enviadas pelo STM32."""
     print(f"\n{'='*50}")
     print(f"CAPTURANDO RESULTADO DA {phase_name}")
     print(f"{'='*50}")
-
     lines_captured = []
-    timeout_time = time.time() + 20  # 20 segundos timeout (margem de segurança)
-
+    timeout_time = time.time() + 20
     print(f"Aguardando {expected_lines} linhas filtradas...")
-
     while time.time() < timeout_time:
         if ser.in_waiting > 0:
-            line = ser.readline().decode('ascii', errors='ignore').strip()
-
+            raw = ser.readline()
+            line = raw.decode('ascii', errors='ignore').strip()
             if not line:
                 continue
-
-            # Pula linhas de erro/debug
             if line.startswith('ERROR'):
                 print(f"  ⚠ STM32: {line}")
                 continue
-
-            # Captura linha de dados
             lines_captured.append(line)
-
-            # Feedback a cada 10 linhas
             if len(lines_captured) % 10 == 0:
                 print(
                     f"  Linha {len(lines_captured)}/{expected_lines} capturada", end='\r')
-
-            # Verifica se capturou todas
             if len(lines_captured) >= expected_lines:
                 print(f"\n✓ Todas as {expected_lines} linhas capturadas!")
                 return lines_captured
-
     print(
         f"\n✗ Timeout! Capturadas apenas {len(lines_captured)}/{expected_lines} linhas")
     return None
+
+
+def wait_for_token(ser, token, total_timeout=30):
+    """Espera até que 'token' apareça no fluxo UART."""
+    buf = ''
+    start = time.time()
+    while time.time() - start < total_timeout:
+        if ser.in_waiting > 0:
+            c = ser.read(1).decode('ascii', errors='ignore')
+            if not c:
+                continue
+            buf += c
+            if token in buf:
+                return True
+        else:
+            time.sleep(0.01)
+    return False
 
 
 def capture_pgm_header(ser):
@@ -198,7 +185,7 @@ def capture_pgm_header(ser):
     """
     print("\nAguardando cabeçalho P2...")
 
-    timeout_time = time.time() + 10
+    timeout_time = time.time() + 20
     header_found = False
     width = 0
     height = 0
@@ -318,8 +305,8 @@ def main():
         print("=" * 50)
         send_lines(ser, image_data, 0, BUFFER_SIZE - 1)
 
-        # Aguarda um pouco para STM32 começar processar
-        time.sleep(0.5)
+        # # Aguarda um pouco para STM32 começar processar
+        # time.sleep(0.5)
 
         # Captura cabeçalho PGM (enviado pelo STM32 após receber FASE 1)
         header = capture_pgm_header(ser)
@@ -335,7 +322,19 @@ def main():
             ser.close()
             sys.exit(1)
 
-        # FASE 2: Envia linhas 44-89 (últimas 46 linhas, com overlap)
+        # FASE 2 HANDSHAKE
+        print("\nAguardando pronto para FASE 2 (#READY2#)...")
+        if not wait_for_token(ser, HANDSHAKE_READY):
+            print("✗ Timeout aguardando READY2. Abortando.")
+            ser.close()
+            sys.exit(1)
+        print("✓ Recebido READY2. Enviando GO2.")
+        ser.reset_input_buffer()
+        time.sleep(0.05)
+        ser.write(HANDSHAKE_GO.encode('ascii'))
+        ser.flush()
+        time.sleep(0.05)
+
         print("\n" + "=" * 50)
         print("FASE 2: Enviando últimas 46 linhas (44-89)")
         print("        STM32 processará linhas 45-89")
@@ -343,10 +342,6 @@ def main():
         print("=" * 50)
         send_lines(ser, image_data, 44, height - 1)
 
-        # Aguarda STM32 começar processar
-        time.sleep(0.5)
-
-        # Captura últimas 45 linhas filtradas (45-89)
         phase2_lines = capture_filtered_lines(ser, 45, "FASE 2")
         if not phase2_lines:
             print("\n✗ Erro ao capturar linhas da FASE 2!")
