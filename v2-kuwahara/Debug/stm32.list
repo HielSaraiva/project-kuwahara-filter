@@ -27,25 +27,25 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000028  00000000  00000000  00008068  2**0
                   CONTENTS, READONLY
- 12 .debug_info   00007c83  00000000  00000000  00008090  2**0
+ 12 .debug_info   00007c7d  00000000  00000000  00008090  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 000014fe  00000000  00000000  0000fd13  2**0
+ 13 .debug_abbrev 0000151d  00000000  00000000  0000fd0d  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 00000678  00000000  00000000  00011218  2**3
+ 14 .debug_aranges 00000678  00000000  00000000  00011230  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_rnglists 000004f0  00000000  00000000  00011890  2**0
+ 15 .debug_rnglists 000004f0  00000000  00000000  000118a8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  000105be  00000000  00000000  00011d80  2**0
+ 16 .debug_macro  000105be  00000000  00000000  00011d98  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   0000892d  00000000  00000000  0002233e  2**0
+ 17 .debug_line   0000892d  00000000  00000000  00022356  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    0005f341  00000000  00000000  0002ac6b  2**0
+ 18 .debug_str    0005f343  00000000  00000000  0002ac83  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000043  00000000  00000000  00089fac  2**0
+ 19 .comment      00000043  00000000  00000000  00089fc6  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  000021d8  00000000  00000000  00089ff0  2**2
+ 20 .debug_frame  000021d8  00000000  00000000  0008a00c  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_line_str 00000082  00000000  00000000  0008c1c8  2**0
+ 21 .debug_line_str 00000082  00000000  00000000  0008c1e4  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -4373,7 +4373,7 @@ Disassembly of section .text:
 }
 
 #ifdef STREAMING_MODE
-// Envia string inteira (bloqueante)
+// Envia string inteira
 static void uart_send_str(const char *s)
 {
  80022c4:	b580      	push	{r7, lr}
@@ -4492,7 +4492,6 @@ static int uart_wait_token(const char *token, uint32_t timeout_ms)
  8002376:	d8d3      	bhi.n	8002320 <uart_wait_token+0x24>
 			}
 		}
-		// else: timeout curto, segue loop até timeout total
 	}
 	return 0; // não encontrado
  8002378:	2300      	movs	r3, #0
@@ -4642,15 +4641,15 @@ int receive_line_uart(pixel_t *line_buffer)
  8002444:	0036ee80 	.word	0x0036ee80
  8002448:	20000084 	.word	0x20000084
 
-0800244c <process_and_send_lines>:
- * @param start_line Linha inicial na imagem COMPLETA (0-89).
+0800244c <kuwahara_filter_buffered>:
  * @param end_line Linha final na imagem COMPLETA (0-89).
  * @param buffer_start_line Linha inicial no BUFFER (0-45).
  */
-void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
+// Aplica o filtro Kuwahara usando o buffer parcial (streaming) e envia linhas filtradas
+void kuwahara_filter_buffered(int start_line, int end_line, int buffer_start_line)
 {
  800244c:	b5f0      	push	{r4, r5, r6, r7, lr}
- 800244e:	4c9a      	ldr	r4, [pc, #616]	@ (80026b8 <process_and_send_lines+0x26c>)
+ 800244e:	4c9a      	ldr	r4, [pc, #616]	@ (80026b8 <kuwahara_filter_buffered+0x26c>)
  8002450:	44a5      	add	sp, r4
  8002452:	af00      	add	r7, sp, #0
  8002454:	62f8      	str	r0, [r7, #44]	@ 0x2c
@@ -4684,7 +4683,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002484:	681b      	ldr	r3, [r3, #0]
  8002486:	3301      	adds	r3, #1
  8002488:	2b00      	cmp	r3, #0
- 800248a:	da00      	bge.n	800248e <process_and_send_lines+0x42>
+ 800248a:	da00      	bge.n	800248e <kuwahara_filter_buffered+0x42>
  800248c:	3301      	adds	r3, #1
  800248e:	105b      	asrs	r3, r3, #1
  8002490:	229a      	movs	r2, #154	@ 0x9a
@@ -4693,7 +4692,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002496:	1852      	adds	r2, r2, r1
  8002498:	19d2      	adds	r2, r2, r7
  800249a:	6013      	str	r3, [r2, #0]
-	char line_buf[512]; // 90*4 chars ("255 ") + margem
+	char line_buf[512];
 
 	for (int pixel_y = start_line; pixel_y <= end_line; ++pixel_y)
  800249c:	6afb      	ldr	r3, [r7, #44]	@ 0x2c
@@ -4702,7 +4701,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  80024a2:	1852      	adds	r2, r2, r1
  80024a4:	19d2      	adds	r2, r2, r7
  80024a6:	6013      	str	r3, [r2, #0]
- 80024a8:	f000 fbc6 	bl	8002c38 <process_and_send_lines+0x7ec>
+ 80024a8:	f000 fbc6 	bl	8002c38 <kuwahara_filter_buffered+0x7ec>
 	{
 		// Mapeia coordenada global para buffer
 		int buffer_y = pixel_y - start_line + buffer_start_line;
@@ -4736,7 +4735,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  80024dc:	1852      	adds	r2, r2, r1
  80024de:	19d2      	adds	r2, r2, r7
  80024e0:	6013      	str	r3, [r2, #0]
- 80024e2:	e373      	b.n	8002bcc <process_and_send_lines+0x780>
+ 80024e2:	e373      	b.n	8002bcc <kuwahara_filter_buffered+0x780>
 		{
 			int window_top_y = pixel_y - (window_size / 2);
  80024e4:	239b      	movs	r3, #155	@ 0x9b
@@ -4746,7 +4745,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  80024ec:	19db      	adds	r3, r3, r7
  80024ee:	681b      	ldr	r3, [r3, #0]
  80024f0:	2b00      	cmp	r3, #0
- 80024f2:	da00      	bge.n	80024f6 <process_and_send_lines+0xaa>
+ 80024f2:	da00      	bge.n	80024f6 <kuwahara_filter_buffered+0xaa>
  80024f4:	3301      	adds	r3, #1
  80024f6:	105b      	asrs	r3, r3, #1
  80024f8:	425b      	negs	r3, r3
@@ -4770,7 +4769,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  800251a:	19db      	adds	r3, r3, r7
  800251c:	681b      	ldr	r3, [r3, #0]
  800251e:	2b00      	cmp	r3, #0
- 8002520:	da00      	bge.n	8002524 <process_and_send_lines+0xd8>
+ 8002520:	da00      	bge.n	8002524 <kuwahara_filter_buffered+0xd8>
  8002522:	3301      	adds	r3, #1
  8002524:	105b      	asrs	r3, r3, #1
  8002526:	425b      	negs	r3, r3
@@ -4789,8 +4788,8 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002540:	6013      	str	r3, [r2, #0]
 
 			double best_std_dev = 1e300;
- 8002542:	4a5e      	ldr	r2, [pc, #376]	@ (80026bc <process_and_send_lines+0x270>)
- 8002544:	4b5e      	ldr	r3, [pc, #376]	@ (80026c0 <process_and_send_lines+0x274>)
+ 8002542:	4a5e      	ldr	r2, [pc, #376]	@ (80026bc <kuwahara_filter_buffered+0x270>)
+ 8002544:	4b5e      	ldr	r3, [pc, #376]	@ (80026c0 <kuwahara_filter_buffered+0x274>)
  8002546:	21ac      	movs	r1, #172	@ 0xac
  8002548:	0089      	lsls	r1, r1, #2
  800254a:	1949      	adds	r1, r1, r5
@@ -4798,7 +4797,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  800254e:	600a      	str	r2, [r1, #0]
  8002550:	604b      	str	r3, [r1, #4]
 			double best_mean = image_buffer[buffer_y][pixel_x];
- 8002552:	4a5c      	ldr	r2, [pc, #368]	@ (80026c4 <process_and_send_lines+0x278>)
+ 8002552:	4a5c      	ldr	r2, [pc, #368]	@ (80026c4 <kuwahara_filter_buffered+0x278>)
  8002554:	2399      	movs	r3, #153	@ 0x99
  8002556:	009b      	lsls	r3, r3, #2
  8002558:	195b      	adds	r3, r3, r5
@@ -4824,7 +4823,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002582:	604b      	str	r3, [r1, #4]
 
 			int quadrant_order[4][2] = {{1, 1}, {0, 1}, {1, 0}, {0, 0}};
- 8002584:	4b50      	ldr	r3, [pc, #320]	@ (80026c8 <process_and_send_lines+0x27c>)
+ 8002584:	4b50      	ldr	r3, [pc, #320]	@ (80026c8 <kuwahara_filter_buffered+0x27c>)
  8002586:	22b2      	movs	r2, #178	@ 0xb2
  8002588:	0092      	lsls	r2, r2, #2
  800258a:	189b      	adds	r3, r3, r2
@@ -4832,7 +4831,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  800258e:	4694      	mov	ip, r2
  8002590:	44bc      	add	ip, r7
  8002592:	4463      	add	r3, ip
- 8002594:	4a4d      	ldr	r2, [pc, #308]	@ (80026cc <process_and_send_lines+0x280>)
+ 8002594:	4a4d      	ldr	r2, [pc, #308]	@ (80026cc <kuwahara_filter_buffered+0x280>)
  8002596:	ca13      	ldmia	r2!, {r0, r1, r4}
  8002598:	c313      	stmia	r3!, {r0, r1, r4}
  800259a:	ca13      	ldmia	r2!, {r0, r1, r4}
@@ -4847,10 +4846,10 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  80025a8:	1952      	adds	r2, r2, r5
  80025aa:	19d2      	adds	r2, r2, r7
  80025ac:	6013      	str	r3, [r2, #0]
- 80025ae:	e2a5      	b.n	8002afc <process_and_send_lines+0x6b0>
+ 80025ae:	e2a5      	b.n	8002afc <kuwahara_filter_buffered+0x6b0>
 			{
 				int quadrant_y = quadrant_order[q][0];
- 80025b0:	4b45      	ldr	r3, [pc, #276]	@ (80026c8 <process_and_send_lines+0x27c>)
+ 80025b0:	4b45      	ldr	r3, [pc, #276]	@ (80026c8 <kuwahara_filter_buffered+0x27c>)
  80025b2:	21b2      	movs	r1, #178	@ 0xb2
  80025b4:	0089      	lsls	r1, r1, #2
  80025b6:	185b      	adds	r3, r3, r1
@@ -4872,7 +4871,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  80025d6:	19d2      	adds	r2, r2, r7
  80025d8:	6013      	str	r3, [r2, #0]
 				int quadrant_x = quadrant_order[q][1];
- 80025da:	4b3b      	ldr	r3, [pc, #236]	@ (80026c8 <process_and_send_lines+0x27c>)
+ 80025da:	4b3b      	ldr	r3, [pc, #236]	@ (80026c8 <kuwahara_filter_buffered+0x27c>)
  80025dc:	185b      	adds	r3, r3, r1
  80025de:	0021      	movs	r1, r4
  80025e0:	187a      	adds	r2, r7, r1
@@ -4931,7 +4930,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  800263e:	1852      	adds	r2, r2, r1
  8002640:	19d2      	adds	r2, r2, r7
  8002642:	6013      	str	r3, [r2, #0]
- 8002644:	e188      	b.n	8002958 <process_and_send_lines+0x50c>
+ 8002644:	e188      	b.n	8002958 <kuwahara_filter_buffered+0x50c>
 				{
 					for (int offset_x = 0; offset_x < quadrant_size; ++offset_x)
  8002646:	2300      	movs	r3, #0
@@ -4941,7 +4940,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  800264e:	1852      	adds	r2, r2, r1
  8002650:	19d2      	adds	r2, r2, r7
  8002652:	6013      	str	r3, [r2, #0]
- 8002654:	e161      	b.n	800291a <process_and_send_lines+0x4ce>
+ 8002654:	e161      	b.n	800291a <kuwahara_filter_buffered+0x4ce>
 					{
 						int read_y = window_top_y + (quadrant_y ? (quadrant_size - 1) : 0) + offset_y;
  8002656:	2395      	movs	r3, #149	@ 0x95
@@ -4951,14 +4950,14 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  800265e:	19db      	adds	r3, r3, r7
  8002660:	681b      	ldr	r3, [r3, #0]
  8002662:	2b00      	cmp	r3, #0
- 8002664:	d006      	beq.n	8002674 <process_and_send_lines+0x228>
+ 8002664:	d006      	beq.n	8002674 <kuwahara_filter_buffered+0x228>
  8002666:	239a      	movs	r3, #154	@ 0x9a
  8002668:	009b      	lsls	r3, r3, #2
  800266a:	189b      	adds	r3, r3, r2
  800266c:	19db      	adds	r3, r3, r7
  800266e:	681b      	ldr	r3, [r3, #0]
  8002670:	3b01      	subs	r3, #1
- 8002672:	e000      	b.n	8002676 <process_and_send_lines+0x22a>
+ 8002672:	e000      	b.n	8002676 <kuwahara_filter_buffered+0x22a>
  8002674:	2300      	movs	r3, #0
  8002676:	2298      	movs	r2, #152	@ 0x98
  8002678:	0092      	lsls	r2, r2, #2
@@ -4986,14 +4985,14 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  80026a2:	19db      	adds	r3, r3, r7
  80026a4:	681b      	ldr	r3, [r3, #0]
  80026a6:	2b00      	cmp	r3, #0
- 80026a8:	d012      	beq.n	80026d0 <process_and_send_lines+0x284>
+ 80026a8:	d012      	beq.n	80026d0 <kuwahara_filter_buffered+0x284>
  80026aa:	239a      	movs	r3, #154	@ 0x9a
  80026ac:	009b      	lsls	r3, r3, #2
  80026ae:	189b      	adds	r3, r3, r2
  80026b0:	19db      	adds	r3, r3, r7
  80026b2:	681b      	ldr	r3, [r3, #0]
  80026b4:	3b01      	subs	r3, #1
- 80026b6:	e00c      	b.n	80026d2 <process_and_send_lines+0x286>
+ 80026b6:	e00c      	b.n	80026d2 <kuwahara_filter_buffered+0x286>
  80026b8:	fffffd14 	.word	0xfffffd14
  80026bc:	8800759c 	.word	0x8800759c
  80026c0:	7e37e43c 	.word	0x7e37e43c
@@ -5028,7 +5027,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  80026fc:	19db      	adds	r3, r3, r7
  80026fe:	681b      	ldr	r3, [r3, #0]
  8002700:	2b00      	cmp	r3, #0
- 8002702:	da06      	bge.n	8002712 <process_and_send_lines+0x2c6>
+ 8002702:	da06      	bge.n	8002712 <kuwahara_filter_buffered+0x2c6>
 							read_y = -read_y;
  8002704:	1853      	adds	r3, r2, r1
  8002706:	19db      	adds	r3, r3, r7
@@ -5050,7 +5049,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002724:	19db      	adds	r3, r3, r7
  8002726:	681b      	ldr	r3, [r3, #0]
  8002728:	429a      	cmp	r2, r3
- 800272a:	db0c      	blt.n	8002746 <process_and_send_lines+0x2fa>
+ 800272a:	db0c      	blt.n	8002746 <kuwahara_filter_buffered+0x2fa>
 							read_y = 2 * height - read_y - 2;
  800272c:	1903      	adds	r3, r0, r4
  800272e:	19db      	adds	r3, r3, r7
@@ -5073,7 +5072,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  800274e:	19db      	adds	r3, r3, r7
  8002750:	681b      	ldr	r3, [r3, #0]
  8002752:	2b00      	cmp	r3, #0
- 8002754:	da06      	bge.n	8002764 <process_and_send_lines+0x318>
+ 8002754:	da06      	bge.n	8002764 <kuwahara_filter_buffered+0x318>
 							read_x = -read_x;
  8002756:	1853      	adds	r3, r2, r1
  8002758:	19db      	adds	r3, r3, r7
@@ -5095,7 +5094,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002776:	19db      	adds	r3, r3, r7
  8002778:	681b      	ldr	r3, [r3, #0]
  800277a:	429a      	cmp	r2, r3
- 800277c:	db0c      	blt.n	8002798 <process_and_send_lines+0x34c>
+ 800277c:	db0c      	blt.n	8002798 <kuwahara_filter_buffered+0x34c>
 							read_x = 2 * width - read_x - 2;
  800277e:	1903      	adds	r3, r0, r4
  8002780:	19db      	adds	r3, r3, r7
@@ -5120,7 +5119,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  80027a0:	19db      	adds	r3, r3, r7
  80027a2:	681b      	ldr	r3, [r3, #0]
  80027a4:	2b00      	cmp	r3, #0
- 80027a6:	da03      	bge.n	80027b0 <process_and_send_lines+0x364>
+ 80027a6:	da03      	bge.n	80027b0 <kuwahara_filter_buffered+0x364>
 							read_y = 0;
  80027a8:	2300      	movs	r3, #0
  80027aa:	1852      	adds	r2, r2, r1
@@ -5139,7 +5138,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  80027c2:	19db      	adds	r3, r3, r7
  80027c4:	681b      	ldr	r3, [r3, #0]
  80027c6:	429a      	cmp	r2, r3
- 80027c8:	db07      	blt.n	80027da <process_and_send_lines+0x38e>
+ 80027c8:	db07      	blt.n	80027da <kuwahara_filter_buffered+0x38e>
 							read_y = height - 1;
  80027ca:	0022      	movs	r2, r4
  80027cc:	1883      	adds	r3, r0, r2
@@ -5157,7 +5156,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  80027e2:	19db      	adds	r3, r3, r7
  80027e4:	681b      	ldr	r3, [r3, #0]
  80027e6:	2b00      	cmp	r3, #0
- 80027e8:	da03      	bge.n	80027f2 <process_and_send_lines+0x3a6>
+ 80027e8:	da03      	bge.n	80027f2 <kuwahara_filter_buffered+0x3a6>
 							read_x = 0;
  80027ea:	2300      	movs	r3, #0
  80027ec:	1852      	adds	r2, r2, r1
@@ -5176,7 +5175,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002804:	19db      	adds	r3, r3, r7
  8002806:	681b      	ldr	r3, [r3, #0]
  8002808:	429a      	cmp	r2, r3
- 800280a:	db07      	blt.n	800281c <process_and_send_lines+0x3d0>
+ 800280a:	db07      	blt.n	800281c <kuwahara_filter_buffered+0x3d0>
 							read_x = width - 1;
  800280c:	0022      	movs	r2, r4
  800280e:	1883      	adds	r3, r0, r2
@@ -5211,15 +5210,15 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  800283c:	19db      	adds	r3, r3, r7
  800283e:	681b      	ldr	r3, [r3, #0]
  8002840:	2b00      	cmp	r3, #0
- 8002842:	db58      	blt.n	80028f6 <process_and_send_lines+0x4aa>
+ 8002842:	db58      	blt.n	80028f6 <kuwahara_filter_buffered+0x4aa>
  8002844:	198b      	adds	r3, r1, r6
  8002846:	19db      	adds	r3, r3, r7
  8002848:	681b      	ldr	r3, [r3, #0]
  800284a:	2b2d      	cmp	r3, #45	@ 0x2d
- 800284c:	dc53      	bgt.n	80028f6 <process_and_send_lines+0x4aa>
+ 800284c:	dc53      	bgt.n	80028f6 <kuwahara_filter_buffered+0x4aa>
 						{
 							int pixel_value = image_buffer[buf_y][read_x];
- 800284e:	4aca      	ldr	r2, [pc, #808]	@ (8002b78 <process_and_send_lines+0x72c>)
+ 800284e:	4aca      	ldr	r2, [pc, #808]	@ (8002b78 <kuwahara_filter_buffered+0x72c>)
  8002850:	198b      	adds	r3, r1, r6
  8002852:	19db      	adds	r3, r3, r7
  8002854:	681b      	ldr	r3, [r3, #0]
@@ -5305,7 +5304,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  80028f0:	19d2      	adds	r2, r2, r7
  80028f2:	6013      	str	r3, [r2, #0]
 						{
- 80028f4:	e007      	b.n	8002906 <process_and_send_lines+0x4ba>
+ 80028f4:	e007      	b.n	8002906 <kuwahara_filter_buffered+0x4ba>
 						}
 						else
 						{
@@ -5319,7 +5318,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002900:	19d2      	adds	r2, r2, r7
  8002902:	6013      	str	r3, [r2, #0]
 							break;
- 8002904:	e017      	b.n	8002936 <process_and_send_lines+0x4ea>
+ 8002904:	e017      	b.n	8002936 <kuwahara_filter_buffered+0x4ea>
 					for (int offset_x = 0; offset_x < quadrant_size; ++offset_x)
  8002906:	22a0      	movs	r2, #160	@ 0xa0
  8002908:	0092      	lsls	r2, r2, #2
@@ -5343,8 +5342,8 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  800292c:	19db      	adds	r3, r3, r7
  800292e:	681b      	ldr	r3, [r3, #0]
  8002930:	429a      	cmp	r2, r3
- 8002932:	da00      	bge.n	8002936 <process_and_send_lines+0x4ea>
- 8002934:	e68f      	b.n	8002656 <process_and_send_lines+0x20a>
+ 8002932:	da00      	bge.n	8002936 <kuwahara_filter_buffered+0x4ea>
+ 8002934:	e68f      	b.n	8002656 <kuwahara_filter_buffered+0x20a>
 						}
 					}
 					if (!valid_quadrant)
@@ -5355,7 +5354,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  800293e:	19db      	adds	r3, r3, r7
  8002940:	681b      	ldr	r3, [r3, #0]
  8002942:	2b00      	cmp	r3, #0
- 8002944:	d017      	beq.n	8002976 <process_and_send_lines+0x52a>
+ 8002944:	d017      	beq.n	8002976 <kuwahara_filter_buffered+0x52a>
 				for (int offset_y = 0; offset_y < quadrant_size; ++offset_y)
  8002946:	22a1      	movs	r2, #161	@ 0xa1
  8002948:	0092      	lsls	r2, r2, #2
@@ -5378,9 +5377,9 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  800296a:	19db      	adds	r3, r3, r7
  800296c:	681b      	ldr	r3, [r3, #0]
  800296e:	429a      	cmp	r2, r3
- 8002970:	da00      	bge.n	8002974 <process_and_send_lines+0x528>
- 8002972:	e668      	b.n	8002646 <process_and_send_lines+0x1fa>
- 8002974:	e000      	b.n	8002978 <process_and_send_lines+0x52c>
+ 8002970:	da00      	bge.n	8002974 <kuwahara_filter_buffered+0x528>
+ 8002972:	e668      	b.n	8002646 <kuwahara_filter_buffered+0x1fa>
+ 8002974:	e000      	b.n	8002978 <kuwahara_filter_buffered+0x52c>
 						break;
  8002976:	46c0      	nop			@ (mov r8, r8)
 				}
@@ -5394,16 +5393,16 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002980:	19db      	adds	r3, r3, r7
  8002982:	681b      	ldr	r3, [r3, #0]
  8002984:	2b00      	cmp	r3, #0
- 8002986:	d100      	bne.n	800298a <process_and_send_lines+0x53e>
- 8002988:	e0ae      	b.n	8002ae8 <process_and_send_lines+0x69c>
+ 8002986:	d100      	bne.n	800298a <kuwahara_filter_buffered+0x53e>
+ 8002988:	e0ae      	b.n	8002ae8 <kuwahara_filter_buffered+0x69c>
  800298a:	26a3      	movs	r6, #163	@ 0xa3
  800298c:	00b6      	lsls	r6, r6, #2
  800298e:	18b3      	adds	r3, r6, r2
  8002990:	19db      	adds	r3, r3, r7
  8002992:	681b      	ldr	r3, [r3, #0]
  8002994:	2b01      	cmp	r3, #1
- 8002996:	dc00      	bgt.n	800299a <process_and_send_lines+0x54e>
- 8002998:	e0a6      	b.n	8002ae8 <process_and_send_lines+0x69c>
+ 8002996:	dc00      	bgt.n	800299a <kuwahara_filter_buffered+0x54e>
+ 8002998:	e0a6      	b.n	8002ae8 <kuwahara_filter_buffered+0x69c>
 				{
 					double mean = (double)sum / (double)pixel_count;
  800299a:	23a6      	movs	r3, #166	@ 0xa6
@@ -5539,7 +5538,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002ab0:	6800      	ldr	r0, [r0, #0]
  8002ab2:	f7fd fbdd 	bl	8000270 <__aeabi_dcmplt>
  8002ab6:	1e03      	subs	r3, r0, #0
- 8002ab8:	d016      	beq.n	8002ae8 <process_and_send_lines+0x69c>
+ 8002ab8:	d016      	beq.n	8002ae8 <kuwahara_filter_buffered+0x69c>
 					{
 						best_std_dev = std_dev;
  8002aba:	0031      	movs	r1, r6
@@ -5584,8 +5583,8 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002b04:	19db      	adds	r3, r3, r7
  8002b06:	681b      	ldr	r3, [r3, #0]
  8002b08:	2b03      	cmp	r3, #3
- 8002b0a:	dc00      	bgt.n	8002b0e <process_and_send_lines+0x6c2>
- 8002b0c:	e550      	b.n	80025b0 <process_and_send_lines+0x164>
+ 8002b0a:	dc00      	bgt.n	8002b0e <kuwahara_filter_buffered+0x6c2>
+ 8002b0c:	e550      	b.n	80025b0 <kuwahara_filter_buffered+0x164>
 					}
 				}
 			}
@@ -5617,7 +5616,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002b3c:	19d2      	adds	r2, r2, r7
  8002b3e:	6812      	ldr	r2, [r2, #0]
  8002b40:	429a      	cmp	r2, r3
- 8002b42:	da1d      	bge.n	8002b80 <process_and_send_lines+0x734>
+ 8002b42:	da1d      	bge.n	8002b80 <kuwahara_filter_buffered+0x734>
 				offset += sprintf(&line_buf[offset], "%d ", filtered_value);
  8002b44:	2330      	movs	r3, #48	@ 0x30
  8002b46:	195b      	adds	r3, r3, r5
@@ -5631,7 +5630,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002b56:	194a      	adds	r2, r1, r5
  8002b58:	19d2      	adds	r2, r2, r7
  8002b5a:	6812      	ldr	r2, [r2, #0]
- 8002b5c:	4907      	ldr	r1, [pc, #28]	@ (8002b7c <process_and_send_lines+0x730>)
+ 8002b5c:	4907      	ldr	r1, [pc, #28]	@ (8002b7c <kuwahara_filter_buffered+0x730>)
  8002b5e:	0018      	movs	r0, r3
  8002b60:	f001 ffd0 	bl	8004b04 <siprintf>
  8002b64:	0002      	movs	r2, r0
@@ -5643,7 +5642,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002b70:	1862      	adds	r2, r4, r1
  8002b72:	19d2      	adds	r2, r2, r7
  8002b74:	6013      	str	r3, [r2, #0]
- 8002b76:	e01f      	b.n	8002bb8 <process_and_send_lines+0x76c>
+ 8002b76:	e01f      	b.n	8002bb8 <kuwahara_filter_buffered+0x76c>
  8002b78:	2000010c 	.word	0x2000010c
  8002b7c:	0800608c 	.word	0x0800608c
 			else
@@ -5663,7 +5662,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002b98:	1952      	adds	r2, r2, r5
  8002b9a:	19d2      	adds	r2, r2, r7
  8002b9c:	6812      	ldr	r2, [r2, #0]
- 8002b9e:	492f      	ldr	r1, [pc, #188]	@ (8002c5c <process_and_send_lines+0x810>)
+ 8002b9e:	492f      	ldr	r1, [pc, #188]	@ (8002c5c <kuwahara_filter_buffered+0x810>)
  8002ba0:	0018      	movs	r0, r3
  8002ba2:	f001 ffaf 	bl	8004b04 <siprintf>
  8002ba6:	0002      	movs	r2, r0
@@ -5698,8 +5697,8 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002bde:	19db      	adds	r3, r3, r7
  8002be0:	681b      	ldr	r3, [r3, #0]
  8002be2:	429a      	cmp	r2, r3
- 8002be4:	da00      	bge.n	8002be8 <process_and_send_lines+0x79c>
- 8002be6:	e47d      	b.n	80024e4 <process_and_send_lines+0x98>
+ 8002be4:	da00      	bge.n	8002be8 <kuwahara_filter_buffered+0x79c>
+ 8002be6:	e47d      	b.n	80024e4 <kuwahara_filter_buffered+0x98>
 		}
 		line_buf[offset++] = '\n';
  8002be8:	20b0      	movs	r0, #176	@ 0xb0
@@ -5711,7 +5710,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002bf4:	1901      	adds	r1, r0, r4
  8002bf6:	19c9      	adds	r1, r1, r7
  8002bf8:	600a      	str	r2, [r1, #0]
- 8002bfa:	4a19      	ldr	r2, [pc, #100]	@ (8002c60 <process_and_send_lines+0x814>)
+ 8002bfa:	4a19      	ldr	r2, [pc, #100]	@ (8002c60 <kuwahara_filter_buffered+0x814>)
  8002bfc:	21b2      	movs	r1, #178	@ 0xb2
  8002bfe:	0089      	lsls	r1, r1, #2
  8002c00:	1852      	adds	r2, r2, r1
@@ -5731,7 +5730,7 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002c1a:	2130      	movs	r1, #48	@ 0x30
  8002c1c:	1909      	adds	r1, r1, r4
  8002c1e:	19c9      	adds	r1, r1, r7
- 8002c20:	4810      	ldr	r0, [pc, #64]	@ (8002c64 <process_and_send_lines+0x818>)
+ 8002c20:	4810      	ldr	r0, [pc, #64]	@ (8002c64 <kuwahara_filter_buffered+0x818>)
  8002c22:	f001 fa8b 	bl	800413c <HAL_UART_Transmit>
 	for (int pixel_y = start_line; pixel_y <= end_line; ++pixel_y)
  8002c26:	22b1      	movs	r2, #177	@ 0xb1
@@ -5751,8 +5750,8 @@ void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
  8002c42:	681a      	ldr	r2, [r3, #0]
  8002c44:	6abb      	ldr	r3, [r7, #40]	@ 0x28
  8002c46:	429a      	cmp	r2, r3
- 8002c48:	dc00      	bgt.n	8002c4c <process_and_send_lines+0x800>
- 8002c4a:	e42f      	b.n	80024ac <process_and_send_lines+0x60>
+ 8002c48:	dc00      	bgt.n	8002c4c <kuwahara_filter_buffered+0x800>
+ 8002c4a:	e42f      	b.n	80024ac <kuwahara_filter_buffered+0x60>
 	}
 }
  8002c4c:	46c0      	nop			@ (mov r8, r8)
@@ -5864,14 +5863,14 @@ int main(void)
 
 		// FASE 1: Processa e envia linhas 0-44 (45 linhas)
 		// Buffer tem linhas 0-45, então linha 44 tem contexto completo (linha 45 disponível)
-		HAL_Delay(150); // pequena folga
+		HAL_Delay(150);
  8002cd8:	2096      	movs	r0, #150	@ 0x96
  8002cda:	f000 fb17 	bl	800330c <HAL_Delay>
-		process_and_send_lines(0, 44, 0);
+		kuwahara_filter_buffered(0, 44, 0);
  8002cde:	2200      	movs	r2, #0
  8002ce0:	212c      	movs	r1, #44	@ 0x2c
  8002ce2:	2000      	movs	r0, #0
- 8002ce4:	f7ff fbb2 	bl	800244c <process_and_send_lines>
+ 8002ce4:	f7ff fbb2 	bl	800244c <kuwahara_filter_buffered>
 
 		// Sinaliza ao host que MCU terminou FASE 1 e está pronto para iniciar FASE 2
 		uart_send_str("#READY2#\n");
@@ -5942,7 +5941,6 @@ int main(void)
 			}
 		}
 
-		// Pequeno delay
 		HAL_Delay(100);
  8002d4c:	2064      	movs	r0, #100	@ 0x64
  8002d4e:	f000 fadd 	bl	800330c <HAL_Delay>
@@ -5953,11 +5951,11 @@ int main(void)
  8002d54:	2b00      	cmp	r3, #0
  8002d56:	d005      	beq.n	8002d64 <main+0xfc>
 		{
-			process_and_send_lines(45, 89, 1);
+			kuwahara_filter_buffered(45, 89, 1);
  8002d58:	2201      	movs	r2, #1
  8002d5a:	2159      	movs	r1, #89	@ 0x59
  8002d5c:	202d      	movs	r0, #45	@ 0x2d
- 8002d5e:	f7ff fb75 	bl	800244c <process_and_send_lines>
+ 8002d5e:	f7ff fb75 	bl	800244c <kuwahara_filter_buffered>
  8002d62:	e78c      	b.n	8002c7e <main+0x16>
 		}
 		else
@@ -6105,10 +6103,10 @@ static void MX_USART2_UART_Init(void)
  8002e34:	4b14      	ldr	r3, [pc, #80]	@ (8002e88 <MX_USART2_UART_Init+0x58>)
  8002e36:	4a15      	ldr	r2, [pc, #84]	@ (8002e8c <MX_USART2_UART_Init+0x5c>)
  8002e38:	601a      	str	r2, [r3, #0]
-	huart2.Init.BaudRate = 38400;
+	huart2.Init.BaudRate = 115200;
  8002e3a:	4b13      	ldr	r3, [pc, #76]	@ (8002e88 <MX_USART2_UART_Init+0x58>)
- 8002e3c:	2296      	movs	r2, #150	@ 0x96
- 8002e3e:	0212      	lsls	r2, r2, #8
+ 8002e3c:	22e1      	movs	r2, #225	@ 0xe1
+ 8002e3e:	0252      	lsls	r2, r2, #9
  8002e40:	605a      	str	r2, [r3, #4]
 	huart2.Init.WordLength = UART_WORDLENGTH_8B;
  8002e42:	4b11      	ldr	r3, [pc, #68]	@ (8002e88 <MX_USART2_UART_Init+0x58>)

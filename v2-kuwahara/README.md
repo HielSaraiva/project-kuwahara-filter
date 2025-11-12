@@ -12,7 +12,7 @@ Este projeto implementa o filtro Kuwahara para imagens 90x90 em um microcontrola
 ## Configuração do STM32
 - **Placa:** STM32F030R8 (ARM Cortex-M0, 48 MHz, 8KB SRAM)
 - **UART:** USART2
-- **Baudrate:** 38400 bps
+- **Baudrate:** 115200 bps
 - **Tamanho da imagem:** 90×90 pixels
 - **Formato:** PGM ASCII (P2)
 - **Modo:** STREAMING_MODE (processamento em 2 fases com buffer de 46 linhas)
@@ -35,6 +35,11 @@ O STM32 processa a imagem em **duas fases** para otimizar o uso de memória:
 4. STM32 envia 45 linhas filtradas
 
 **Resultado:** 90 linhas filtradas (45 + 45) em ~35 segundos
+
+### Handshake e sincronização
+- Após concluir o envio das 45 linhas filtradas da FASE 1, o STM32 envia o token `#READY2#` indicando que está pronto para receber a FASE 2.
+- O script Python, ao detectar `#READY2#`, limpa o buffer de entrada, responde com `#GO2#` e então transmite as linhas 44–89.
+- Proteção (gate) na FASE 2: o firmware só processa e envia a segunda metade se todas as 46 linhas forem recebidas com sucesso; caso contrário, emite uma mensagem `SKIP` e reinicia o ciclo.
 
 ## Como Usar - Passo a Passo
 
@@ -89,11 +94,12 @@ python3 writer_reader.py ../../v1-kuwahara/imgs_original/pepper.ascii.pgm
 2. Selecione a porta do STM32
 3. Script envia FASE 1 (linhas 0-45)
 4. STM32 processa e envia resultado FASE 1
-5. Script envia FASE 2 (linhas 44-89)
-6. STM32 processa e envia resultado FASE 2
-7. Script salva resultado: filtered_YYYYMMDD_HHMMSS.pgm
+5. STM32 envia token de pronto: #READY2#
+6. Script responde com #GO2# e envia FASE 2 (linhas 44-89)
+7. STM32 processa e envia resultado FASE 2
+8. Script salva resultado: filtered_YYYYMMDD_HHMMSS.pgm
 
-Tempo total: ~35 segundos
+Tempo total: ~35 segundos (pode reduzir com 115200 bps, dependendo do host)
 ```
 
 ### 5. Resultado
@@ -137,6 +143,14 @@ P2
 (90 linhas filtradas)
 ```
 
+### Handshake
+- Token de pronto do STM32: `#READY2#` (após enviar a primeira metade do resultado)
+- Comando do host para iniciar FASE 2: `#GO2#`
+- Mensagens de erro/controle possíveis:
+  - `ERROR: Failed to receive line <n>`: houve falha na recepção de uma linha.
+  - `ERROR: GO2 timeout`: o host não enviou `#GO2#` no tempo esperado.
+  - `SKIP: Phase 2 processing skipped due to incomplete reception.`: FASE 2 não foi processada por dados incompletos.
+
 ## Modos de Operação
 
 O código suporta dois modos (configurável em `main.c`):
@@ -176,6 +190,14 @@ O código suporta dois modos (configurável em `main.c`):
 timeout_time = time.time() + 20  # Aumentar se necessário
 ```
 
+### Problema: FASE 2 não inicia
+**Sintoma:** Mensagem `ERROR: GO2 timeout` no log do STM32.
+**Solução:** Verifique o cabo/porta serial e se o script está recebendo `#READY2#` e enviando `#GO2#`. Tente reiniciar a placa e rodar o script novamente.
+
+### Problema: Duplicação de linhas ou imagem "metade/metade"
+**Causa raiz (antiga):** colisão de dados entre as fases e processamento com buffer parcial.
+**Solução (atual):** o handshake READY2/GO2 e o gate na FASE 2 eliminam esse problema. Se aparecer `SKIP`, repita a execução para garantir recepção completa.
+
 ### Problema: Porta serial não encontrada
 **Solução:** 
 - Verificar cabo USB (dados, não só alimentação)
@@ -184,7 +206,7 @@ timeout_time = time.time() + 20  # Aumentar se necessário
 
 ### Problema: Valores incorretos
 **Solução:**
-- Verificar baudrate (38400 em ambos)
+- Verificar baudrate (115200 em ambos)
 - Verificar se STM32 está em modo STREAMING_MODE
 - Reiniciar placa após flash
 
@@ -220,3 +242,4 @@ timeout_time = time.time() + 20  # Aumentar se necessário
 
 ## Autor
 Hiel Saraiva
+Roberta Alanis

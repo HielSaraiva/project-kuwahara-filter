@@ -69,7 +69,7 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 #ifdef STREAMING_MODE
-// Buffer para 46 linhas da imagem (46x90 = 4,140 bytes)
+// Buffer para 46 linhas da imagem (46x90)
 static pixel_t image_buffer[BUFFER_SIZE][IMG_SIZE];
 #endif
 /* USER CODE END PV */
@@ -210,7 +210,7 @@ void kuwahara_filter(const pixel_t image_in[IMG_SIZE][IMG_SIZE],
 }
 
 #ifdef STREAMING_MODE
-// Envia string inteira (bloqueante)
+// Envia string inteira
 static void uart_send_str(const char *s)
 {
 	size_t len = strlen(s);
@@ -243,7 +243,6 @@ static int uart_wait_token(const char *token, uint32_t timeout_ms)
 				matched = (b == (uint8_t)token[0]) ? 1 : 0;
 			}
 		}
-		// else: timeout curto, segue loop até timeout total
 	}
 	return 0; // não encontrado
 }
@@ -295,13 +294,14 @@ int receive_line_uart(pixel_t *line_buffer)
  * @param end_line Linha final na imagem COMPLETA (0-89).
  * @param buffer_start_line Linha inicial no BUFFER (0-45).
  */
-void process_and_send_lines(int start_line, int end_line, int buffer_start_line)
+// Aplica o filtro Kuwahara usando o buffer parcial (streaming) e envia linhas filtradas
+void kuwahara_filter_buffered(int start_line, int end_line, int buffer_start_line)
 {
 	const int width = IMG_SIZE;
 	const int height = IMG_SIZE;
 	const int window_size = KUWAHARA_WINDOW;
 	const int quadrant_size = (window_size + 1) / 2;
-	char line_buf[512]; // 90*4 chars ("255 ") + margem
+	char line_buf[512];
 
 	for (int pixel_y = start_line; pixel_y <= end_line; ++pixel_y)
 	{
@@ -467,8 +467,8 @@ int main(void)
 
 		// FASE 1: Processa e envia linhas 0-44 (45 linhas)
 		// Buffer tem linhas 0-45, então linha 44 tem contexto completo (linha 45 disponível)
-		HAL_Delay(150); // pequena folga
-		process_and_send_lines(0, 44, 0);
+		HAL_Delay(150);
+		kuwahara_filter_buffered(0, 44, 0);
 
 		// Sinaliza ao host que MCU terminou FASE 1 e está pronto para iniciar FASE 2
 		uart_send_str("#READY2#\n");
@@ -493,13 +493,12 @@ int main(void)
 			}
 		}
 
-		// Pequeno delay
 		HAL_Delay(100);
 
 		// FASE 2: Processa e envia linhas 45-89 (45 linhas)
 		if (ok_phase2)
 		{
-			process_and_send_lines(45, 89, 1);
+			kuwahara_filter_buffered(45, 89, 1);
 		}
 		else
 		{
@@ -512,9 +511,6 @@ int main(void)
 
 		HAL_Delay(5000); // Delay apenas no modo FLASH
 #endif
-
-		// NÃO use HAL_Delay aqui no modo STREAMING!
-		// O loop ficará aguardando próxima imagem via UART
 	};
 	/* USER CODE END 3 */
 }
@@ -572,7 +568,7 @@ static void MX_USART2_UART_Init(void)
 
 	/* USER CODE END USART2_Init 1 */
 	huart2.Instance = USART2;
-	huart2.Init.BaudRate = 38400;
+	huart2.Init.BaudRate = 115200;
 	huart2.Init.WordLength = UART_WORDLENGTH_8B;
 	huart2.Init.StopBits = UART_STOPBITS_1;
 	huart2.Init.Parity = UART_PARITY_NONE;

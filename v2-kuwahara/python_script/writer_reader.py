@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Script para enviar imagem PGM para STM32 via UART em duas fases.
 
@@ -8,7 +7,7 @@ Fase 2: Envia linhas 44-89 (últimas 46 linhas) → STM32 processa 45-89
 Overlap: Linha 44 é reenviada na FASE 2 para permitir que o filtro
          processe a linha 45 (que precisa ler linha 44 e 46)
 
-Autor: Copilot Assistant
+Autor: Roberta Alanis
 """
 
 import serial
@@ -114,7 +113,7 @@ def read_pgm_file(filepath):
 
 
 def send_lines(ser, image_data, start_line, end_line):
-    """Envia bloco de linhas sequencialmente (menos flush por eficiência)."""
+    """Envia bloco de linhas sequencialmente."""
     num_lines = end_line - start_line + 1
     print(f"\nEnviando linhas {start_line}-{end_line} ({num_lines} linhas)...")
     buf = []
@@ -266,7 +265,7 @@ def main():
     # Lê a imagem PGM
     width, height, max_value, image_data = read_pgm_file(pgm_file)
 
-    # Verifica dimensões (deve ser 90x90 para este projeto)
+    # Verifica dimensões
     EXPECTED_SIZE = 90
     BUFFER_SIZE = 46
 
@@ -286,10 +285,10 @@ def main():
 
     # Abre conexão serial
     try:
-        print(f"\n=== Conectando em {port} (38400 baud) ===")
+        print(f"\n=== Conectando em {port} (115200 baud) ===")
         ser = serial.Serial(
             port=port,
-            baudrate=38400,
+            baudrate=115200,
             bytesize=serial.EIGHTBITS,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
@@ -305,9 +304,6 @@ def main():
         print("=" * 50)
         send_lines(ser, image_data, 0, BUFFER_SIZE - 1)
 
-        # # Aguarda um pouco para STM32 começar processar
-        # time.sleep(0.5)
-
         # Captura cabeçalho PGM (enviado pelo STM32 após receber FASE 1)
         header = capture_pgm_header(ser)
         if not header:
@@ -316,6 +312,7 @@ def main():
             sys.exit(1)
 
         # Captura primeiras 45 linhas filtradas (0-44)
+        # Armazenas primeiras 45 linhas filtradas
         phase1_lines = capture_filtered_lines(ser, 45, "FASE 1")
         if not phase1_lines:
             print("\n✗ Erro ao capturar linhas da FASE 1!")

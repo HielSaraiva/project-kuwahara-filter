@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Script para comparar imagens PGM filtradas pixel a pixel.
 Gera heatmap mostrando as diferenças entre duas imagens.
