@@ -79,7 +79,6 @@ def read_pgm_file(filepath):
             max_value = int(lines[2])
 
             # Lê dados da imagem
-            # CORREÇÃO: pixels podem estar espalhados em múltiplas linhas
             image_data = []
             data_lines = lines[3:]
 
@@ -126,7 +125,7 @@ def send_lines(ser, image_data, start_line, end_line):
     ser.write(''.join(buf).encode('ascii'))
     ser.flush()
     print()  # Nova linha
-    print("✓ Envio concluído")
+    print("OK Envio concluído")
 
 
 def capture_filtered_lines(ser, expected_lines, phase_name):
@@ -144,17 +143,17 @@ def capture_filtered_lines(ser, expected_lines, phase_name):
             if not line:
                 continue
             if line.startswith('ERROR'):
-                print(f"  ⚠ STM32: {line}")
+                print(f"  x STM32: {line}")
                 continue
             lines_captured.append(line)
             if len(lines_captured) % 10 == 0:
                 print(
                     f"  Linha {len(lines_captured)}/{expected_lines} capturada", end='\r')
             if len(lines_captured) >= expected_lines:
-                print(f"\n✓ Todas as {expected_lines} linhas capturadas!")
+                print(f"\nOK Todas as {expected_lines} linhas capturadas!")
                 return lines_captured
     print(
-        f"\n✗ Timeout! Capturadas apenas {len(lines_captured)}/{expected_lines} linhas")
+        f"\nx Timeout! Capturadas apenas {len(lines_captured)}/{expected_lines} linhas")
     return None
 
 
@@ -199,7 +198,7 @@ def capture_pgm_header(ser):
 
             # Detecta P2
             if line == 'P2' and not header_found:
-                print("✓ Cabeçalho P2 detectado!")
+                print("OK Cabeçalho P2 detectado!")
                 header_found = True
                 continue
 
@@ -209,16 +208,16 @@ def capture_pgm_header(ser):
                 if len(parts) == 2:
                     width = int(parts[0])
                     height = int(parts[1])
-                    print(f"✓ Dimensões: {width}x{height}")
+                    print(f"OK Dimensões: {width}x{height}")
                 continue
 
             # Lê max_value
             if header_found and max_val == 0 and width > 0:
                 max_val = int(line)
-                print(f"✓ Max value: {max_val}")
+                print(f"OK Max value: {max_val}")
                 return {'width': width, 'height': height, 'max_val': max_val}
 
-    print("✗ Timeout ao aguardar cabeçalho!")
+    print("x Timeout ao aguardar cabeçalho!")
     return None
 
 
@@ -238,10 +237,10 @@ def save_pgm_file(image_dict, output_path):
             for line in image_dict['data']:
                 f.write(line + '\n')
 
-        print(f"\n✓ Imagem salva em: {output_path}")
+        print(f"\nOK Imagem salva em: {output_path}")
         return True
     except Exception as e:
-        print(f"\n✗ Erro ao salvar arquivo: {e}")
+        print(f"\nx Erro ao salvar arquivo: {e}")
         return False
 
 
@@ -295,7 +294,7 @@ def main():
             timeout=1
         )
         time.sleep(2)  # Aguarda estabilização
-        print("✓ Conexão estabelecida\n")
+        print("OK Conexão estabelecida\n")
 
         # FASE 1: Envia linhas 0-45 (primeiras 46 linhas)
         print("=" * 50)
@@ -307,7 +306,7 @@ def main():
         # Captura cabeçalho PGM (enviado pelo STM32 após receber FASE 1)
         header = capture_pgm_header(ser)
         if not header:
-            print("\n✗ Erro ao capturar cabeçalho PGM!")
+            print("\nx Erro ao capturar cabeçalho PGM!")
             ser.close()
             sys.exit(1)
 
@@ -315,17 +314,17 @@ def main():
         # Armazenas primeiras 45 linhas filtradas
         phase1_lines = capture_filtered_lines(ser, 45, "FASE 1")
         if not phase1_lines:
-            print("\n✗ Erro ao capturar linhas da FASE 1!")
+            print("\nx Erro ao capturar linhas da FASE 1!")
             ser.close()
             sys.exit(1)
 
         # FASE 2 HANDSHAKE
         print("\nAguardando pronto para FASE 2 (#READY2#)...")
         if not wait_for_token(ser, HANDSHAKE_READY):
-            print("✗ Timeout aguardando READY2. Abortando.")
+            print("x Timeout aguardando READY2. Abortando.")
             ser.close()
             sys.exit(1)
-        print("✓ Recebido READY2. Enviando GO2.")
+        print("OK Recebido READY2. Enviando GO2.")
         ser.reset_input_buffer()
         time.sleep(0.05)
         ser.write(HANDSHAKE_GO.encode('ascii'))
@@ -341,12 +340,12 @@ def main():
 
         phase2_lines = capture_filtered_lines(ser, 45, "FASE 2")
         if not phase2_lines:
-            print("\n✗ Erro ao capturar linhas da FASE 2!")
+            print("\nx Erro ao capturar linhas da FASE 2!")
             ser.close()
             sys.exit(1)
 
         print("\n" + "=" * 50)
-        print("✓ PROCESSAMENTO COMPLETO")
+        print("OK PROCESSAMENTO COMPLETO")
         print("=" * 50)
 
         # Combina todas as linhas (45 + 45 = 90)
@@ -373,13 +372,13 @@ def main():
         # Salva arquivo
         if save_pgm_file(filtered_image, output_path):
             print(f"\n{'='*50}")
-            print("🎉 PROCESSAMENTO CONCLUÍDO COM SUCESSO!")
+            print("PROCESSAMENTO CONCLUÍDO COM SUCESSO!")
             print(f"{'='*50}")
             print(f"Imagem original: {pgm_file}")
             print(f"Imagem filtrada: {output_path}")
             print(f"Total de linhas: {len(all_lines)}")
         else:
-            print("\n⚠ Erro ao salvar arquivo.")
+            print("\nx Erro ao salvar arquivo.")
 
         ser.close()
 
