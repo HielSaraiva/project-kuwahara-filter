@@ -377,8 +377,3 @@ As imagens filtradas são salvas em `imgs_filtered/` no formato PGM P2 (ASCII).
   
 - **Espaço**: O(W × H)
   - Armazena imagem original e filtrada
-
-## Próximos Passos
-
-- **Versão 2**: Portabilidade para sistemas embarcados
-- **Versão 3**: Otimizações (cache, SIMD, paralelização)

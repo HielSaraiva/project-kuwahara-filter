@@ -10,7 +10,6 @@ Implementação do filtro Kuwahara para processamento de imagens em C. O filtro 
 - [Formato de Imagens](#formato-de-imagens)
 - [Detalhes Técnicos](#detalhes-técnicos)
   - [Algoritmo Implementado](#algoritmo-implementado)
-  - [Diferenças entre as Implementações](#diferenças-entre-as-implementações)
 - [Licença](#licença)
 - [Autor](#autor)
 
@@ -47,8 +46,8 @@ project-kuwahara-filter/
 ├── LICENSE                             # Licença MIT
 │
 ├── v1-kuwahara/                        # Versão 1 - Implementação em PC
-│
-└── v2-kuwahara/                        # Versão 2 - Sistema Embarcado
+├── v2-kuwahara/                        # Versão 2 - Sistema Embarcado
+└── v3-kuwahara/                        # Versão 3 - Sistema Embarcado Otimizado
 ```
 
 ## Hardware Utilizado
@@ -87,6 +86,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## Autor
 
-Hiel Saraiva
+- Hiel Saraiva
+- Roberta Alanis
 
 ---

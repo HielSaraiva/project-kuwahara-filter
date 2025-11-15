@@ -1,13 +1,29 @@
-# Kuwahara Filter STM32 - v2-kuwahara
+# Versão 2 - Filtro Kuwahara STM32
+
+## Sumário
+- [Descrição](#descrição)
+- [Placa STM32](#placa-stm32)
+- [Configuração do STM32](#configuração-do-stm32)
+- [Estrutura de Arquivos](#estrutura-de-arquivos)
+- [Algoritmo - Processamento em Duas Fases](#algoritmo---processamento-em-duas-fases)
+- [Handshake e sincronização](#handshake-e-sincronização)
+- [Como Usar - Passo a Passo](#como-usar---passo-a-passo)
+- [Formato do Protocolo UART](#formato-do-protocolo-uart)
+- [Modos de Operação](#modos-de-operação)
+- [Especificações Técnicas](#especificações-técnicas)
+- [Problemas](#problemas)
+- [Comparação v1 vs v2](#comparação-v1-vs-v2)
+- [Arquivos Principais](#arquivos-principais)
+- [Requisitos](#requisitos)
+- [Próximos Passos](#próximos-passos)
 
 ## Descrição
 Este projeto implementa o filtro Kuwahara para imagens 90x90 em um microcontrolador STM32 (F030R8) usando **modo streaming** com buffer otimizado. A imagem é enviada via UART em duas fases, processada pelo STM32, e o resultado filtrado é retornado no formato PGM (P2, texto).
 
-## Estrutura
-- **Core/Inc/**: Headers do projeto (configurações, tipos, etc)
-- **Core/Src/**: Código fonte principal (main.c com filtro Kuwahara)
-- **Core/pgms/**: Exemplos de arquivos PGM gerados
-- **python_script/**: Script Python para enviar imagem e receber resultado filtrado
+## Placa STM32
+Imagem ilustrativa da família STM32 (link oficial ST):
+
+![Placa STM32F0](https://www.st.com/bin/ecommerce/api/image.PF259997.en.feature-description-include-personalized-no-cpn-large.jpg)
 
 ## Configuração do STM32
 - **Placa:** STM32F030R8 (ARM Cortex-M0, 48 MHz, 8KB SRAM)
@@ -17,6 +33,43 @@ Este projeto implementa o filtro Kuwahara para imagens 90x90 em um microcontrola
 - **Formato:** PGM ASCII (P2)
 - **Modo:** STREAMING_MODE (processamento em 2 fases com buffer de 46 linhas)
 - **Memória:** Buffer de 4,140 bytes (46×90 pixels = 50.54% da SRAM)
+
+## Estrutura de Arquivos
+
+```
+v2-kuwahara/
+│
+├── README.md                      
+├── stm32.ioc                      # Configuração do CubeMX
+├── STM32F030R8TX_FLASH.ld         # Linker script (memória Flash/SRAM)
+├── .project / .cproject           # Metadados do STM32CubeIDE
+│
+├── Core/
+│   ├── Inc/
+│   │   ├── main.h                 # Declarações principais
+│   │   ├── stm32f0xx_hal_conf.h   
+│   │   ├── stm32f0xx_it.h         
+│   │   ├── image_mona_lisa.h      # Imagem (modo FLASH)
+│   │   └── image_pepper.h         # Imagem (modo FLASH)
+│   ├── Src/
+│   │   ├── main.c                 # Lógica principal
+│   │   ├── stm32f0xx_it.c         
+│   │   ├── stm32f0xx_hal_msp.c    
+│   │   ├── system_stm32f0xx.c     
+│   │   ├── syscalls.c / sysmem.c  
+│   │   └── startup_stm32f030r8tx.s
+│   ├── pgms/                      # Saídas PGM geradas (modo streaming)
+│
+├── Drivers/
+│   
+└── python_script/
+    ├── writer_reader.py           # Envio de imagem + recepção filtrada
+    ├── compare_filtered.py        # Comparação com versão v1
+    ├── requirements.txt           # Dependências Python
+    └── heatmaps/                  # Imagens de diferenças
+
+
+```
 
 ## Algoritmo - Processamento em Duas Fases
 
@@ -182,7 +235,7 @@ O código suporta dois modos (configurável em `main.c`):
 - **Buffer SRAM:** 46 linhas × 90 pixels = 4,140 bytes
 - **Uso total SRAM:** ~4,800 bytes (58.6% de 8KB)
 
-## Troubleshooting
+## Problemas
 
 ### Problema: Timeout na captura
 **Solução:** Aumentar timeout em `writer_reader.py` linha 158:
@@ -240,6 +293,6 @@ timeout_time = time.time() + 20  # Aumentar se necessário
   - matplotlib (geração de heatmaps - opcional, para comparação)
 - **Imagens:** Arquivos PGM P2 ASCII 90×90
 
-## Autor
-Hiel Saraiva
-Roberta Alanis
+## Próximos Passos
+
+- **Versão 3**: Otimizações (cache, SIMD, paralelização)
