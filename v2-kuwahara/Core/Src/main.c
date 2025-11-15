@@ -301,13 +301,11 @@ void kuwahara_filter_buffered(int start_line, int end_line, int buffer_start_lin
 	const int height = IMG_SIZE;
 	const int window_size = KUWAHARA_WINDOW;
 	const int quadrant_size = (window_size + 1) / 2;
-	char line_buf[512];
 
 	for (int pixel_y = start_line; pixel_y <= end_line; ++pixel_y)
 	{
 		// Mapeia coordenada global para buffer
 		int buffer_y = pixel_y - start_line + buffer_start_line;
-		int offset = 0;
 
 		for (int pixel_x = 0; pixel_x < width; ++pixel_x)
 		{
@@ -355,7 +353,7 @@ void kuwahara_filter_buffered(int start_line, int end_line, int buffer_start_lin
 						if (read_x >= width)
 							read_x = width - 1;
 
-						// Converter coordenada global → buffer
+						// Converter coordenada global -> buffer
 						int buf_y = read_y - start_line + buffer_start_line;
 
 						// Verifica se está no buffer
@@ -394,12 +392,11 @@ void kuwahara_filter_buffered(int start_line, int end_line, int buffer_start_lin
 
 			int filtered_value = (int)(best_mean);
 			if (pixel_x < width - 1)
-				offset += sprintf(&line_buf[offset], "%d ", filtered_value);
+				printf("%d ", filtered_value);
 			else
-				offset += sprintf(&line_buf[offset], "%d", filtered_value);
+				printf("%d", filtered_value);
 		}
-		line_buf[offset++] = '\n';
-		HAL_UART_Transmit(&huart2, (uint8_t *)line_buf, (uint16_t)offset, 1000);
+		printf("\n");
 	}
 }
 #endif
